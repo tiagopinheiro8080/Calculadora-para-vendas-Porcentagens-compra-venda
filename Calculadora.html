@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Calculadora de Lucro por Itens</title>
+  <style>
+    body{
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      background:#f4f4f4;
+      color:#111;
+    }
+    .wrap{
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 14px;
+    }
+    h1{
+      margin: 0 0 10px;
+      font-size: 20px;
+    }
+    .card{
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1.4fr 1fr 1fr .8fr auto;
+      gap: 10px;
+      align-items:end;
+    }
+    @media (max-width: 760px){
+      .grid{ grid-template-columns: 1fr 1fr; }
+      .grid .span2{ grid-column: span 2; }
+    }
+    label{
+      font-size: 12px;
+      color:#444;
+      display:block;
+      margin-bottom: 4px;
+    }
+    input{
+      width:100%;
+      padding:10px;
+      border:1px solid #ccc;
+      border-radius:8px;
+      font-size: 14px;
+    }
+    button{
+      border:1px solid #ccc;
+      background:#eee;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor:pointer;
+      font-size: 14px;
+    }
+    button:hover{ background:#e6e6e6; }
+    .primary{
+      background:#2d6cdf;
+      border-color:#2d6cdf;
+      color:#fff;
+    }
+    .primary:hover{ background:#255fc5; }
+    .danger{
+      background:#ffe8e8;
+      border-color:#ffbcbc;
+    }
+    .danger:hover{ background:#ffdcdc; }
+
+    table{
+      width:100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td{
+      border-bottom: 1px solid #eee;
+      padding: 10px 8px;
+      text-align:left;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    th{ color:#333; font-size: 12px; text-transform: uppercase; letter-spacing: .3px; }
+    td .mini-btn{
+      padding: 6px 10px;
+      border-radius: 8px;
+    }
+
+    .totals{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 600px){
+      .totals{ grid-template-columns: 1fr; }
+    }
+    .pill{
+      border:1px solid #ddd;
+      border-radius: 10px;
+      padding: 10px;
+      background:#fafafa;
+    }
+    .pill .k{ font-size: 12px; color:#555; margin:0 0 6px; }
+    .pill .v{ font-size: 18px; font-weight: 700; margin:0; }
+    .muted{ color:#666; font-size: 12px; }
+    .actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top: 10px;
+    }
+    .empty{
+      color:#666;
+      font-size: 14px;
+      padding: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Calculadora simples de lucro (por itens)</h1>
+
+    <div class="card">
+      <div class="grid">
+        <div class="span2">
+          <label for="nome">Nome do item (opcional)</label>
+          <input id="nome" placeholder="Ex: Produto X" />
+        </div>
+
+        <div>
+          <label for="compra">Preço de compra (R$)</label>
+          <input id="compra" inputmode="decimal" placeholder="Ex: 70,00" />
+        </div>
+
+        <div>
+          <label for="venda">Preço de venda (R$)</label>
+          <input id="venda" inputmode="decimal" placeholder="Ex: 110,00" />
+        </div>
+
+        <div>
+          <label for="qtd">Qtd</label>
+          <input id="qtd" inputmode="numeric" placeholder="1" />
+        </div>
+
+        <div>
+          <button class="primary" id="btnAdd" type="button">Adicionar</button>
+        </div>
+      </div>
+
+      <p class="muted" style="margin:10px 0 0;">
+        Dica: você pode deixar o nome vazio. Quantidade padrão = 1.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2 style="margin:0 0 10px; font-size:16px;">Itens adicionados</h2>
+
+      <div id="emptyState" class="empty">Nenhum item adicionado ainda.</div>
+
+      <div style="overflow:auto;">
+        <table id="tabela" style="display:none;">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Compra</th>
+              <th>Venda</th>
+              <th>Qtd</th>
+              <th>Total Compra</th>
+              <th>Total Venda</th>
+              <th>Lucro</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="actions">
+        <button id="btnLimpar" class="danger" type="button">Limpar tudo</button>
+        <button id="btnPdf" class="primary" type="button">Gerar PDF</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin:0 0 10px; font-size:16px;">Resumo</h2>
+      <div class="totals">
+        <div class="pill">
+          <p class="k">Total investido (compra)</p>
+          <p class="v" id="totalCompra">R$ 0,00</p>
+        </div>
+        <div class="pill">
+          <p class="k">Total vendido</p>
+          <p class="v" id="totalVenda">R$ 0,00</p>
+        </div>
+        <div class="pill">
+          <p class="k">Lucro (R$)</p>
+          <p class="v" id="lucro">R$ 0,00</p>
+        </div>
+        <div class="pill">
+          <p class="k">Lucro (%)</p>
+          <p class="v" id="lucroPct">0,00%</p>
+          <p class="muted" style="margin:6px 0 0;">
+            Markup: <span id="markup">0,00%</span> • Margem: <span id="margem">0,00%</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <p class="muted">
+      * Se quiser depois dá pra colocar “editar item” e “salvar lista”.
+    </p>
+  </div>
+
+  <!-- jsPDF (para gerar PDF) -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <script>
+    // ===== Helpers =====
+    const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+    const pct = new Intl.NumberFormat("pt-BR", { style: "percent", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    function parseBRNumber(raw){
+      if (raw === null || raw === undefined) return NaN;
+      const s = String(raw).trim();
+      if (!s) return NaN;
+      const cleaned = s.replace(/\s/g, "").replace(/\./g, "").replace(/,/g, ".");
+      const n = Number(cleaned);
+      return Number.isFinite(n) ? n : NaN;
+    }
+
+    function todayBR(){
+      const d = new Date();
+      const dd = String(d.getDate()).padStart(2, "0");
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const yy = d.getFullYear();
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mi = String(d.getMinutes()).padStart(2, "0");
+      return `${dd}/${mm}/${yy} ${hh}:${mi}`;
+    }
+
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    // ===== State =====
+    let items = [];
+
+    // ===== Elements =====
+    const elNome = document.getElementById("nome");
+    const elCompra = document.getElementById("compra");
+    const elVenda = document.getElementById("venda");
+    const elQtd = document.getElementById("qtd");
+
+    const elTabela = document.getElementById("tabela");
+    const elTbody = document.getElementById("tbody");
+    const elEmpty = document.getElementById("emptyState");
+
+    const outTotalCompra = document.getElementById("totalCompra");
+    const outTotalVenda = document.getElementById("totalVenda");
+    const outLucro = document.getElementById("lucro");
+    const outLucroPct = document.getElementById("lucroPct");
+    const outMarkup = document.getElementById("markup");
+    const outMargem = document.getElementById("margem");
+
+    // ===== Render / Calc =====
+    function recalcAndRender(){
+      if (items.length === 0){
+        elTabela.style.display = "none";
+        elEmpty.style.display = "block";
+      } else {
+        elTabela.style.display = "table";
+        elEmpty.style.display = "none";
+      }
+
+      elTbody.innerHTML = items.map((it, idx) => {
+        const totalC = it.compra * it.qtd;
+        const totalV = it.venda * it.qtd;
+        const lucro = totalV - totalC;
+        const nome = it.nome?.trim() ? it.nome.trim() : `Item ${idx + 1}`;
+
+        return `
+          <tr>
+            <td>${escapeHtml(nome)}</td>
+            <td>${brl.format(it.compra)}</td>
+            <td>${brl.format(it.venda)}</td>
+            <td>${it.qtd}</td>
+            <td>${brl.format(totalC)}</td>
+            <td>${brl.format(totalV)}</td>
+            <td>${brl.format(lucro)}</td>
+            <td><button class="mini-btn danger" data-remove="${it.id}">Remover</button></td>
+          </tr>
+        `;
+      }).join("");
+
+      const totalCompra = items.reduce((acc, it) => acc + (it.compra * it.qtd), 0);
+      const totalVenda = items.reduce((acc, it) => acc + (it.venda * it.qtd), 0);
+      const lucro = totalVenda - totalCompra;
+
+      outTotalCompra.textContent = brl.format(totalCompra);
+      outTotalVenda.textContent = brl.format(totalVenda);
+      outLucro.textContent = brl.format(lucro);
+
+      const markupRatio = totalCompra > 0 ? (lucro / totalCompra) : 0;
+      const margemRatio = totalVenda > 0 ? (lucro / totalVenda) : 0;
+
+      outMarkup.textContent = pct.format(markupRatio);
+      outMargem.textContent = pct.format(margemRatio);
+      outLucroPct.textContent = pct.format(markupRatio);
+
+      document.querySelectorAll("[data-remove]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-remove");
+          items = items.filter(x => x.id !== id);
+          recalcAndRender();
+        });
+      });
+    }
+
+    // ===== Actions =====
+    function addItem(){
+      const nome = elNome.value || "";
+      const compra = parseBRNumber(elCompra.value);
+      const venda = parseBRNumber(elVenda.value);
+      const qtdRaw = parseBRNumber(elQtd.value);
+      const qtd = Number.isFinite(qtdRaw) ? Math.floor(qtdRaw) : 1;
+
+      if (!Number.isFinite(compra) || compra < 0){
+        alert("Digite um preço de compra válido.");
+        elCompra.focus();
+        return;
+      }
+      if (!Number.isFinite(venda) || venda < 0){
+        alert("Digite um preço de venda válido.");
+        elVenda.focus();
+        return;
+      }
+      if (!Number.isFinite(qtd) || qtd <= 0){
+        alert("Digite uma quantidade válida (>= 1).");
+        elQtd.focus();
+        return;
+      }
+
+      items.push({
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        nome,
+        compra,
+        venda,
+        qtd
+      });
+
+      elNome.value = "";
+      elCompra.value = "";
+      elVenda.value = "";
+      elQtd.value = "1";
+      elCompra.focus();
+
+      recalcAndRender();
+    }
+
+    function limparTudo(){
+      if (items.length === 0) return;
+      if (!confirm("Quer limpar todos os itens?")) return;
+      items = [];
+      recalcAndRender();
+    }
+
+    // ✅ PDF atualizado: inclui Total Compra e Total Venda por item
+    function gerarPDF(){
+      if (items.length === 0){
+        alert("Adicione pelo menos 1 item antes de gerar o PDF.");
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: "mm", format: "a4" });
+
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+
+      let y = 14;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("Relatório — Lucro por Itens", 14, y);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      y += 6;
+      doc.text(`Gerado em: ${todayBR()}`, 14, y);
+
+      y += 10;
+
+      // Cabeçalho (mais colunas)
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+
+      // Layout simples (posições X). Mantém tudo em 1 linha na folha A4.
+      const cols = [
+        { t: "Item",        x: 14 },
+        { t: "Compra",      x: 62 },
+        { t: "Venda",       x: 84 },
+        { t: "Qtd",         x: 106 },
+        { t: "Tot.Compra",  x: 120 },
+        { t: "Tot.Venda",   x: 148 },
+        { t: "Lucro",       x: 176 },
+      ];
+
+      cols.forEach(c => doc.text(c.t, c.x, y));
+      y += 4;
+      doc.setDrawColor(200);
+      doc.line(14, y, pageW - 14, y);
+      y += 6;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+
+      function ensureSpace(lines = 1){
+        const needed = lines * 6;
+        if (y + needed > pageH - 18){
+          doc.addPage();
+          y = 16;
+
+          // Reimprime cabeçalho em nova página
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(9);
+          cols.forEach(c => doc.text(c.t, c.x, y));
+          y += 4;
+          doc.setDrawColor(200);
+          doc.line(14, y, pageW - 14, y);
+          y += 6;
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+        }
+      }
+
+      for (let i = 0; i < items.length; i++){
+        const it = items[i];
+        const nome = (it.nome && it.nome.trim()) ? it.nome.trim() : `Item ${i + 1}`;
+
+        const totalC = it.compra * it.qtd;
+        const totalV = it.venda * it.qtd;
+        const lucro = totalV - totalC;
+
+        // Nome com quebra (limitado pra não estourar colunas)
+        const nomeLines = doc.splitTextToSize(nome, 46);
+        ensureSpace(nomeLines.length);
+
+        doc.text(nomeLines, 14, y);
+        doc.text(brl.format(it.compra), 62, y);
+        doc.text(brl.format(it.venda), 84, y);
+        doc.text(String(it.qtd), 106, y);
+        doc.text(brl.format(totalC), 120, y);
+        doc.text(brl.format(totalV), 148, y);
+        doc.text(brl.format(lucro), 176, y);
+
+        y += 6 * nomeLines.length;
+      }
+
+      y += 8;
+      ensureSpace(8);
+
+      // Totais gerais (resumo)
+      const totalCompra = items.reduce((acc, it) => acc + it.compra * it.qtd, 0);
+      const totalVenda = items.reduce((acc, it) => acc + it.venda * it.qtd, 0);
+      const lucro = totalVenda - totalCompra;
+
+      const markupRatio = totalCompra > 0 ? (lucro / totalCompra) : 0;
+      const margemRatio = totalVenda > 0 ? (lucro / totalVenda) : 0;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("Resumo", 14, y);
+      y += 8;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.text(`Total investido: ${brl.format(totalCompra)}`, 14, y); y += 6;
+      doc.text(`Total vendido: ${brl.format(totalVenda)}`, 14, y); y += 6;
+      doc.text(`Lucro: ${brl.format(lucro)}`, 14, y); y += 6;
+      doc.text(`Lucro (% / Markup): ${(markupRatio * 100).toFixed(2).replace(".", ",")}%`, 14, y); y += 6;
+      doc.text(`Margem (%): ${(margemRatio * 100).toFixed(2).replace(".", ",")}%`, 14, y); y += 6;
+
+      const filename = `relatorio-lucro-${new Date().toISOString().slice(0,10)}.pdf`;
+      doc.save(filename);
+    }
+
+    // ===== Bind =====
+    document.getElementById("btnAdd").addEventListener("click", addItem);
+    document.getElementById("btnLimpar").addEventListener("click", limparTudo);
+    document.getElementById("btnPdf").addEventListener("click", gerarPDF);
+
+    [elNome, elCompra, elVenda, elQtd].forEach(el => {
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") addItem();
+      });
+    });
+
+    elQtd.value = "1";
+    recalcAndRender();
+  </script>
+</body>
+</html>
